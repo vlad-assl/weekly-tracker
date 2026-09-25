@@ -17,6 +17,7 @@
     --line:rgba(232,243,236,.16); --amber:#F2C300; --lime:#9BE564; --red:#FF8A6B;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
   html,body{margin:0;background:var(--pitch);color:var(--chalk)}
   body{
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.35;
@@ -91,6 +92,16 @@
   .log{padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px;color:var(--dim)}
   .log b{color:var(--red);font-variant-numeric:tabular-nums}
 
+  .modal{position:fixed;inset:0;background:rgba(6,20,13,.82);display:grid;place-items:center;padding:22px;z-index:20}
+  .sheet{width:100%;max-width:340px;background:var(--raised);border:1.5px solid var(--line);border-radius:8px;padding:20px}
+  .sheet h3{margin:0 0 14px;font-size:17px;font-weight:700;line-height:1.3}
+  .sheet input{width:100%;padding:13px;font:inherit;font-size:19px;background:var(--pitch);color:var(--chalk);
+    border:1.5px solid var(--line);border-radius:5px;margin-bottom:14px}
+  .mBtns{display:flex;gap:9px}
+  .mBtns button{flex:1;padding:12px;font:inherit;font-weight:700;border-radius:5px;cursor:pointer;background:none;border:1.5px solid}
+  .mYes{border-color:var(--lime);color:var(--lime)}
+  .mNo{border-color:var(--line);color:var(--dim)}
+
   .record{display:flex;align-items:baseline;gap:9px;padding:14px 2px;border-bottom:1px solid var(--line)}
   .record b{font-size:34px;font-weight:800;color:var(--lime);font-variant-numeric:tabular-nums;line-height:1}
   .record span{flex:1;color:var(--dim);font-size:14px}
@@ -109,6 +120,16 @@
 </style>
 </head>
 <body>
+<div class="modal" id="modal" hidden>
+  <div class="sheet">
+    <h3 id="mTitle"></h3>
+    <input id="mInput" hidden>
+    <div class="mBtns">
+      <button class="mNo" id="mCancel">Cancel</button>
+      <button class="mYes" id="mOk">OK</button>
+    </div>
+  </div>
+</div>
 <div class="parentbar" id="parentbar" hidden>
   <span>Parent mode</span><button id="exitParent">Done</button>
 </div>
@@ -198,10 +219,10 @@ const REWARDS = [
                       "30 minutes extra on the tablet, phone or TV",
                       "A small treat — ice cream or chocolate"]},
   {cost:40,  options:["Takeaway dinner, your pick",
+                      "A mate over after school",
                       "An hour extra on the tablet, phone or TV",
                       "Cards or a magazine"]},
   {cost:60,  options:["Movie night at home, you choose, with snacks",
-                      "A mate over after school",
                       "Something small for football — socks, grips, a drink bottle"]},
   {cost:100, options:["Movies out",
                       "Trampoline park or indoor soccer",
@@ -228,6 +249,8 @@ const PENALTIES = [
 ];
 
 const DAILY_TARGET = 20;
+const MORNING_BEFORE = 9;     // football done before 9am pays more
+const MORNING_MULT = 1.5;
 const FITNESS_ID = "f4";      // sprints/fitness
 const FITNESS_CAP = 3;        // max times per week it pays
 const GOOD_DAYS_FOR_BONUS = 5;
@@ -252,11 +275,18 @@ function load(){
   store.penalties = store.penalties || []; store.queue = store.queue || [];
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
-function day(k){ return store.days[k] || (store.days[k] = {state:{}, water:0}); }
+function day(k){ return store.days[k] || (store.days[k] = {state:{}, water:0, am:{}}); }
+
+const FOOTBALL_IDS = (GROUPS.find(g=>g.title==="Football")||{tasks:[]}).tasks.map(t=>t.id);
+function valueOf(k, id){
+  const t = byId(id); if(!t) return 0;
+  const d = day(k);
+  return (d.am && d.am[id]) ? Math.round(t.pts * MORNING_MULT) : t.pts;
+}
 
 function ptsOf(k){
   const d = day(k);
-  const got = Object.keys(d.state).reduce((s,id)=> s + (d.state[id]==="ok" && byId(id) ? byId(id).pts : 0), 0);
+  const got = Object.keys(d.state).reduce((s,id)=> s + (d.state[id]==="ok" ? valueOf(k,id) : 0), 0);
   const lost = store.penalties.filter(x=>x.on===k).reduce((s,x)=>s+x.cost,0);
   return got + d.water - lost;
 }
@@ -315,23 +345,29 @@ function armNotify(){
 
 /* --- actions ------------------------------------------------------- */
 function tapTask(id){
-  const d = day(todayKey()), st = d.state[id];
+  const k = todayKey(), d = day(k), st = d.state[id];
+  d.am = d.am || {};
   if(id === FITNESS_ID && !parent && fitnessLocked()) return;
-  if(parent){ if(st==="ok") delete d.state[id]; else d.state[id] = "ok"; }
+  if(parent){ if(st==="ok"){ delete d.state[id]; delete d.am[id]; } else d.state[id] = "ok"; }
   else if(st==="ok") return;                    // only a parent can undo an approval
-  else if(st==="wait") delete d.state[id];
-  else d.state[id] = "wait";
+  else if(st==="wait"){ delete d.state[id]; delete d.am[id]; }
+  else {
+    d.state[id] = "wait";
+    if(FOOTBALL_IDS.includes(id) && new Date().getHours() < MORNING_BEFORE) d.am[id] = true;
+  }
   save(); armNotify(); render();
 }
 function newRecord(){
-  const n = parseInt(prompt("How many keepy-uppies?"), 10);
-  if(!n || n < 1) return;
-  const best = (store.record && store.record.best) || 0;
-  if(n <= best){ alert("Best is still " + best + ". Go again."); return; }
-  store.record = {best:n, on:todayKey()};
-  save();
-  note("New juggling record", "Vedran just hit " + n + " keepy-uppies. Old record was " + best + ".", ["soccer"]);
-  render();
+  ask("How many keepy-uppies?", "number").then(v => {
+    const n = parseInt(v, 10);
+    if(!n || n < 1) return;
+    const best = (store.record && store.record.best) || 0;
+    if(n <= best){ ask("Best is still " + best + ". Go again.").then(()=>{}); return; }
+    store.record = {best:n, on:todayKey()};
+    save();
+    note("New juggling record", "Vedran just hit " + n + " keepy-uppies. Old record was " + best + ".", ["soccer"]);
+    render();
+  });
 }
 function judge(id, ok){
   const d = day(todayKey());
@@ -358,18 +394,43 @@ function settleClaim(ok){
   if(ok && c && bank() >= c.cost) store.spent.push({cost:c.cost, name:c.name, on:todayKey()});
   store.claim = null; save(); render();
 }
+/* --- in-page dialogs (iOS home-screen apps block prompt/confirm) ---- */
+function ask(title, kind){          // kind: "pin" | "number" | "text" | undefined (yes/no)
+  return new Promise(resolve => {
+    const m = $("#modal"), inp = $("#mInput");
+    $("#mTitle").textContent = title;
+    inp.hidden = !kind;
+    if(kind){
+      inp.value = "";
+      inp.type = (kind==="text") ? "text" : "tel";
+      inp.inputMode = (kind==="text") ? "text" : "numeric";
+    }
+    m.hidden = false;
+    if(kind) setTimeout(()=>inp.focus(), 50);
+    const done = v => { m.hidden = true; $("#mOk").onclick = null; $("#mCancel").onclick = null; inp.onkeydown = null; resolve(v); };
+    $("#mOk").onclick = () => done(kind ? inp.value.trim() : true);
+    $("#mCancel").onclick = () => done(null);
+    inp.onkeydown = e => { if(e.key === "Enter") done(inp.value.trim()); };
+  });
+}
+
 function penalise(p){
-  if(!confirm("Take " + p.cost + " points off for: " + p.name + "?")) return;
-  store.penalties.push({cost:p.cost, name:p.name, on:todayKey()});
-  save(); render();
+  ask("Take " + p.cost + " points off for: " + p.name + "?").then(ok => {
+    if(!ok) return;
+    store.penalties.push({cost:p.cost, name:p.name, on:todayKey()});
+    save(); render();
+  });
 }
 function penaliseCustom(){
-  const why = prompt("What for?");
-  if(!why) return;
-  const n = parseInt(prompt("How many points?"), 10);
-  if(!n || n < 1) return;
-  store.penalties.push({cost:n, name:why, on:todayKey()});
-  save(); render();
+  ask("What for?", "text").then(why => {
+    if(!why) return;
+    ask("How many points?", "number").then(v => {
+      const n = parseInt(v, 10);
+      if(!n || n < 1) return;
+      store.penalties.push({cost:n, name:why, on:todayKey()});
+      save(); render();
+    });
+  });
 }
 function undoPenalty(i){ store.penalties.splice(i,1); save(); render(); }
 
@@ -405,17 +466,20 @@ function render(){
   $("#bar").innerHTML = Array.from({length:blocks},(_,n)=>`<i class="${n<lit?"on":""}"></i>`).join("");
 
   $("#lists").innerHTML = GROUPS.map(g => {
-    const got = g.tasks.reduce((s,t)=> s + (d.state[t.id]==="ok" ? t.pts : 0), 0);
+    const got = g.tasks.reduce((s,t)=> s + (d.state[t.id]==="ok" ? valueOf(k,t.id) : 0), 0);
     const max = g.tasks.reduce((s,t)=> s+t.pts, 0);
     const rows = g.tasks.map(t => {
       const st = d.state[t.id];
+      const am = d.am && d.am[t.id];
       const capped = t.id===FITNESS_ID && !st && fitnessThisWeek() >= FITNESS_CAP;
       const cls = (st==="ok" ? "done" : st==="wait" ? "pending" : "") + (capped ? " capped" : "");
-      const sub = st==="wait" ? "<small>waiting for Dad</small>"
+      const sub = st==="wait" ? "<small>waiting for Dad" + (am ? " · morning ×" + MORNING_MULT : "") + "</small>"
+                : am ? "<small>morning ×" + MORNING_MULT + "</small>"
                 : capped ? "<small>" + FITNESS_CAP + " this week already — rest those legs</small>" : "";
+      const shown = am ? Math.round(t.pts*MORNING_MULT) : t.pts;
       const row = `<button class="task ${cls}" data-id="${t.id}">
           <span class="tick"><svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg></span>
-          <span class="label">${t.label}${sub}</span><span class="pts">${t.pts}</span></button>`;
+          <span class="label">${t.label}${sub}</span><span class="pts">${shown}</span></button>`;
       const verdict = (parent && st==="wait")
         ? `<div class="judge"><button class="ok" data-yes="${t.id}">Yes, done</button>
            <button class="no" data-no="${t.id}">Not done</button></div>` : "";
@@ -496,11 +560,14 @@ document.addEventListener("click", e => {
 });
 $("#recordBtn").addEventListener("click", newRecord);
 $("#parentBtn").addEventListener("click", () => {
-  if(prompt("PIN") === PARENT_PIN){ parent = true; render(); }
+  ask("PIN", "pin").then(v => {
+    if(v === PARENT_PIN){ parent = true; render(); }
+    else if(v !== null) ask("Wrong PIN.").then(()=>{});
+  });
 });
 $("#exitParent").addEventListener("click", () => { parent = false; render(); });
 $("#reset").addEventListener("click", () => {
-  store.days[todayKey()] = {state:{}, water:0};
+  store.days[todayKey()] = {state:{}, water:0, am:{}};
   store.penalties = store.penalties.filter(p => p.on !== todayKey());
   store.armed = true; save(); render();
 });

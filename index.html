@@ -192,10 +192,6 @@ const GROUPS = [
     {id:"h4",label:"Help with your brother, no being asked twice",pts:4},
     {id:"h5",label:"Football bag packed for tomorrow",pts:3},
   ]},
-  { title:"School", tasks:[
-    {id:"s1",label:"Homework done",pts:5},
-    {id:"s2",label:"20 minutes reading",pts:4},
-  ]},
   { title:"Football", tasks:[
     {id:"f1",label:"Club session — turned up and worked",pts:12},
     {id:"f2",label:"15 minutes ball work at home",pts:8},
@@ -203,9 +199,13 @@ const GROUPS = [
     {id:"f4",label:"Sprints or fitness",pts:15},
     {id:"f5",label:"Watch a clip and copy the move",pts:3},
   ]},
+  { title:"Food", tasks:[
+    {id:"e1",label:"Proper breakfast",pts:3},
+    {id:"e3",label:"Veggies at dinner",pts:4},
+    {id:"e4",label:"Water instead of soft drink all day",pts:4},
+  ]},
   { title:"Night", tasks:[
     {id:"n1",label:"5 minutes stretching",pts:4},
-    {id:"n2",label:"Veggies at dinner",pts:3},
     {id:"n3",label:"Brush teeth",pts:2},
     {id:"n4",label:"In bed by 8:30, no screen",pts:6},
   ]},
@@ -485,7 +485,7 @@ function render(){
            <button class="no" data-no="${t.id}">Not done</button></div>` : "";
       return row + verdict;
     }).join("");
-    const water = g.title==="Night"
+    const water = g.title==="Food"
       ? `<div class="water"><span class="label">Water — ${WATER_GLASSES} glasses</span><span class="glasses">` +
         Array.from({length:WATER_GLASSES},(_,n)=>
           `<button class="glass ${n<d.water?"on":""}" data-water="${n+1}" aria-label="Glass ${n+1}"></button>`).join("") +

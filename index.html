@@ -7,339 +7,505 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="My Week">
+<meta name="apple-mobile-web-app-title" content="My Day">
 <meta name="theme-color" content="#0A2C1D">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230A2C1D'/><circle cx='32' cy='32' r='15' fill='%23F2C300'/></svg>">
-<title>My Week</title>
+<title>My Day</title>
 <style>
   :root{
-    --pitch:#0A2C1D;
-    --pitch-raised:#10391F;
-    --chalk:#E8F3EC;
-    --chalk-dim:#8FAE9C;
-    --line:rgba(232,243,236,.16);
-    --amber:#F2C300;
-    --lime:#9BE564;
-    --tap:.08s;
+    --pitch:#0A2C1D; --raised:#10391F; --chalk:#E8F3EC; --dim:#8FAE9C;
+    --line:rgba(232,243,236,.16); --amber:#F2C300; --lime:#9BE564; --red:#FF8A6B;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--pitch);color:var(--chalk)}
   body{
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    font-size:17px;line-height:1.35;
-    padding:env(safe-area-inset-top) 0 calc(28px + env(safe-area-inset-bottom));
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.35;
+    padding:env(safe-area-inset-top) 0 calc(30px + env(safe-area-inset-bottom));
     background-image:repeating-linear-gradient(180deg,rgba(255,255,255,.014) 0 56px,transparent 56px 112px);
   }
   .wrap{max-width:560px;margin:0 auto;padding:0 18px}
 
-  /* scoreboard */
-  .board{margin-top:18px;border:1.5px solid var(--line);border-radius:6px;background:var(--pitch-raised);padding:16px 16px 14px}
+  .parentbar{background:var(--amber);color:#152A16;font-weight:700;font-size:14px;
+    padding:calc(9px + env(safe-area-inset-top)) 18px 9px;display:flex;justify-content:space-between;align-items:center}
+  .parentbar button{background:#152A16;color:var(--amber);border:0;font:inherit;font-weight:700;
+    padding:6px 12px;border-radius:4px;cursor:pointer}
+
+  .board{margin-top:18px;border:1.5px solid var(--line);border-radius:6px;background:var(--raised);padding:16px}
   .board-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-  .who{font-size:15px;letter-spacing:.14em;color:var(--chalk-dim)}
-  .dates{font-size:13px;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
-  .score{display:flex;align-items:baseline;gap:8px;margin:8px 0 12px}
-  .score b{
-    font-size:54px;line-height:.9;font-weight:800;color:var(--amber);
-    font-variant-numeric:tabular-nums;letter-spacing:-.02em;
-  }
-  .score span{font-size:17px;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
-  .bar{display:flex;gap:4px;height:16px}
-  .bar i{flex:1;background:rgba(232,243,236,.09);border-radius:2px;transition:background var(--tap) linear}
+  .who{font-size:14px;letter-spacing:.14em;color:var(--dim)}
+  .date{font-size:13px;color:var(--dim)}
+  .score{display:flex;align-items:baseline;gap:9px;margin:10px 0 4px}
+  .score b{font-size:56px;line-height:.9;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .score span{font-size:16px;color:var(--dim)}
+  .bank{font-size:15px}.bank b{color:var(--lime);font-variant-numeric:tabular-nums}
+  .waiting{margin-top:7px;font-size:14px;color:var(--amber)}
+
+  .next{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+  .next-row{display:flex;justify-content:space-between;font-size:14px;color:var(--dim);margin-bottom:7px}
+  .next-row b{color:var(--chalk);font-weight:600}
+  .bar{display:flex;gap:4px;height:13px}
+  .bar i{flex:1;background:rgba(232,243,236,.09);border-radius:2px}
   .bar i.on{background:var(--amber)}
-  .bar i.full{background:var(--lime)}
-  .fulltime{
-    margin-top:12px;padding:10px;border:1.5px solid var(--lime);border-radius:4px;
-    color:var(--lime);font-weight:700;text-align:center;font-size:15px;letter-spacing:.06em;
-  }
 
-  /* days */
-  .days{display:flex;gap:6px;margin:18px 0 4px}
-  .day{
-    flex:1;padding:9px 0 8px;border:1.5px solid var(--line);border-radius:5px;background:transparent;
-    color:var(--chalk-dim);font:inherit;font-size:14px;font-weight:700;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:5px;
-  }
-  .day .dot{width:5px;height:5px;border-radius:50%;background:transparent}
-  .day .dot.train{background:var(--chalk-dim)}
-  .day .dot.done{background:var(--lime)}
-  .day[aria-pressed="true"]{border-color:var(--chalk);color:var(--chalk);background:var(--pitch-raised)}
-  .plan{margin:14px 0 24px;color:var(--chalk-dim);font-size:15px}
-  .plan strong{color:var(--chalk);font-weight:600}
+  h2{margin:28px 0 2px;font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:baseline}
+  h2 em{font-style:normal;font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
 
-  /* task groups */
-  h2{
-    margin:26px 0 2px;font-size:15px;font-weight:700;letter-spacing:.02em;
-    display:flex;justify-content:space-between;align-items:baseline;
-  }
-  h2 em{font-style:normal;font-size:13px;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
-  .task{
-    width:100%;display:flex;align-items:center;gap:14px;padding:15px 2px;
-    background:none;border:0;border-bottom:1px solid var(--line);
-    color:var(--chalk);font:inherit;text-align:left;cursor:pointer;
-  }
-  .tick{
-    flex:none;width:26px;height:26px;border:2px solid var(--chalk-dim);border-radius:50%;
-    display:grid;place-items:center;transition:transform var(--tap) ease-out;
-  }
+  .task{width:100%;display:flex;align-items:center;gap:13px;padding:14px 2px;background:none;border:0;
+    border-bottom:1px solid var(--line);color:var(--chalk);font:inherit;text-align:left;cursor:pointer}
+  .tick{flex:none;width:26px;height:26px;border:2px solid var(--dim);border-radius:50%;display:grid;place-items:center;transition:transform .08s ease-out}
   .tick svg{width:15px;height:15px;stroke:var(--pitch);stroke-width:3.2;fill:none;opacity:0}
-  .task[aria-pressed="true"] .tick{background:var(--lime);border-color:var(--lime)}
-  .task[aria-pressed="true"] .tick svg{opacity:1}
-  .task[aria-pressed="true"] .label{color:var(--chalk-dim);text-decoration:line-through;text-decoration-color:var(--chalk-dim)}
   .task:active .tick{transform:scale(.86)}
+  .task.pending .tick{border-color:var(--amber);border-style:dashed}
+  .task.done .tick{background:var(--lime);border-color:var(--lime)}
+  .task.done .tick svg{opacity:1}
+  .task.done .label{color:var(--dim);text-decoration:line-through}
   .label{flex:1}
-  .pts{flex:none;color:var(--chalk-dim);font-size:14px;font-variant-numeric:tabular-nums}
+  .label small{display:block;font-size:12px;color:var(--amber);text-decoration:none}
+  .pts{flex:none;color:var(--dim);font-size:14px;font-variant-numeric:tabular-nums}
+  .judge{display:flex;gap:7px;padding:0 2px 13px;border-bottom:1px solid var(--line)}
+  .judge button{flex:1;border:1.5px solid var(--line);background:none;color:var(--chalk);font:inherit;
+    font-size:14px;font-weight:600;padding:9px;border-radius:4px;cursor:pointer}
+  .judge .ok{border-color:var(--lime);color:var(--lime)}
+  .judge .no{border-color:var(--red);color:var(--red)}
 
-  /* water */
-  .water{display:flex;align-items:center;gap:14px;padding:15px 2px;border-bottom:1px solid var(--line)}
-  .glasses{display:flex;gap:7px;margin-left:auto}
-  .glass{
-    width:22px;height:30px;border:2px solid var(--chalk-dim);border-radius:3px 3px 7px 7px;
-    background:none;cursor:pointer;padding:0;
-  }
+  .water{display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)}
+  .glasses{display:flex;gap:6px;margin-left:auto}
+  .glass{width:20px;height:28px;border:2px solid var(--dim);border-radius:3px 3px 7px 7px;background:none;cursor:pointer;padding:0}
   .glass.on{background:var(--amber);border-color:var(--amber)}
 
-  footer{margin-top:34px;color:var(--chalk-dim);font-size:13px;display:flex;justify-content:space-between;align-items:center}
-  .reset{background:none;border:0;color:var(--chalk-dim);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px 0}
+  .reward{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .reward .cost{flex:none;width:50px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--amber)}
+  .reward .name{flex:1}
+  .reward.locked{opacity:.45}
+  .reward.locked .cost{color:var(--dim)}
+  .get{flex:none;border:1.5px solid var(--lime);background:none;color:var(--lime);font:inherit;
+    font-size:14px;font-weight:700;padding:7px 12px;border-radius:4px;cursor:pointer}
+  .reward.locked .get{display:none}
+  .askedfor{flex:none;font-size:13px;color:var(--amber);font-weight:600}
+
+  .penalty{display:flex;gap:10px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .penalty .cost{flex:none;width:50px;color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+  .penalty .name{flex:1}
+  .penalty button{border:1.5px solid var(--red);background:none;color:var(--red);font:inherit;
+    font-size:14px;font-weight:700;padding:7px 12px;border-radius:4px;cursor:pointer}
+  .log{padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px;color:var(--dim)}
+  .log b{color:var(--red);font-variant-numeric:tabular-nums}
+
+  .record{display:flex;align-items:baseline;gap:9px;padding:14px 2px;border-bottom:1px solid var(--line)}
+  .record b{font-size:34px;font-weight:800;color:var(--lime);font-variant-numeric:tabular-nums;line-height:1}
+  .record span{flex:1;color:var(--dim);font-size:14px}
+  .bonus{margin-top:5px;font-size:14px;color:var(--dim)}
+  .bonus b{color:var(--lime)}
+  .task.capped{opacity:.45}
+  .task.capped .pts{text-decoration:line-through}
+
+  .history{display:flex;gap:6px;align-items:flex-end;height:54px;margin-top:10px}
+  .history div{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+  .history span{width:100%;background:var(--amber);border-radius:2px;min-height:2px}
+  footer{margin-top:30px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .plain{background:none;border:0;color:var(--dim);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px 0}
   :focus-visible{outline:2px solid var(--amber);outline-offset:3px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<div class="parentbar" id="parentbar" hidden>
+  <span>Parent mode</span><button id="exitParent">Done</button>
+</div>
 <div class="wrap">
 
   <section class="board">
-    <div class="board-top">
-      <div class="who" id="who">VEDRAN · SAS FUTBOL</div>
-      <div class="dates" id="dates"></div>
+    <div class="board-top"><div class="who" id="who"></div><div class="date" id="date"></div></div>
+    <div class="score"><b id="today">0</b><span>points today</span></div>
+    <div class="bank">Saved up: <b id="bank">0</b></div>
+    <div class="bonus" id="bonus"></div>
+    <div class="waiting" id="waiting"></div>
+    <div class="next">
+      <div class="next-row"><span id="nextName"></span><b id="nextGap"></b></div>
+      <div class="bar" id="bar"></div>
     </div>
-    <div class="score"><b id="pts">0</b><span id="target"></span></div>
-    <div class="bar" id="bar"></div>
-    <div class="fulltime" id="fulltime" hidden>Full time. Week smashed.</div>
   </section>
-
-  <nav class="days" id="days" aria-label="Day of the week"></nav>
-  <p class="plan" id="plan"></p>
 
   <div id="lists"></div>
 
+  <h2>Juggling record<em id="recordWhen"></em></h2>
+  <div class="record">
+    <b id="recordBest">0</b><span>keepy-uppies</span>
+    <button class="get" id="recordBtn">Beat it</button>
+  </div>
+
+  <h2>Rewards<em id="bankMini"></em></h2>
+  <div id="rewards"></div>
+
+  <div id="parentZone"></div>
+
+  <h2>Last 7 days</h2>
+  <div class="history" id="history"></div>
+
   <footer>
-    <span id="weekly"></span>
-    <button class="reset" id="reset">Clear this day</button>
+    <span id="tip"></span>
+    <span>
+      <button class="plain" id="parentBtn">Parent</button>
+      <button class="plain" id="reset" hidden>Clear today</button>
+    </span>
   </footer>
 </div>
 
 <script>
 /* ---------------------------------------------------------------
-   CONFIG — edit these lists to change what Vedran sees.
-   Days run Mon(0) ... Sun(6). pts = points per task.
+   CONFIG
    --------------------------------------------------------------- */
-const PLAYER = "VEDRAN · SAS FUTBOL";
+const PLAYER = "VEDRAN";
+const PARENT_PIN = "20170612";
 
-const PLAN = [
-  { day:"Mon", train:true,  note:"Session tonight. Nothing extra at home." },
-  { day:"Tue", train:false, note:"Free night. Best day for ball work." },
-  { day:"Wed", train:false, note:"Free night. Get the legs moving." },
-  { day:"Thu", train:false, note:"Free night. Touch and control." },
-  { day:"Fri", train:true,  note:"Session tonight. Recover well after." },
-  { day:"Sat", train:false, note:"Get to the park. Play, don't drill." },
-  { day:"Sun", train:false, note:"Off-season Sunday. Play for fun, then set next week up." }
+const GROUPS = [
+  { title:"Morning", tasks:[
+    {id:"m1",label:"Make your bed",pts:3},
+    {id:"m2",label:"Brush teeth",pts:2},
+    {id:"m3",label:"Dressed and ready without being asked",pts:3},
+  ]},
+  { title:"Home", tasks:[
+    {id:"h1",label:"Put your dishes away",pts:3},
+    {id:"h2",label:"Pick up your stuff — room and lounge",pts:3},
+    {id:"h3",label:"Help clear the table",pts:3},
+    {id:"h4",label:"Help with your brother, no being asked twice",pts:4},
+    {id:"h5",label:"Football bag packed for tomorrow",pts:3},
+  ]},
+  { title:"School", tasks:[
+    {id:"s1",label:"Homework done",pts:5},
+    {id:"s2",label:"20 minutes reading",pts:4},
+  ]},
+  { title:"Football", tasks:[
+    {id:"f1",label:"Club session — turned up and worked",pts:12},
+    {id:"f2",label:"15 minutes ball work at home",pts:8},
+    {id:"f3",label:"15 minutes juggling",pts:5},
+    {id:"f4",label:"Sprints or fitness",pts:15},
+    {id:"f5",label:"Watch a clip and copy the move",pts:3},
+  ]},
+  { title:"Night", tasks:[
+    {id:"n1",label:"5 minutes stretching",pts:4},
+    {id:"n2",label:"Veggies at dinner",pts:3},
+    {id:"n3",label:"Brush teeth",pts:2},
+    {id:"n4",label:"In bed by 8:30, no screen",pts:6},
+  ]},
 ];
 
-const BALL = [
-  [ {id:"b1",label:"Arrive early, 20 touches before warm-up",pts:5} ],
-  [ {id:"b1",label:"100 wall passes — 50 each foot",pts:5},
-    {id:"b2",label:"5 minutes juggling",pts:5},
-    {id:"b3",label:"10 step-overs into a sprint",pts:5} ],
-  [ {id:"b1",label:"Dribble a figure-8 through two markers, 10 laps",pts:5},
-    {id:"b2",label:"6 sprints, 20 metres, walk back between",pts:5},
-    {id:"b3",label:"50 wall passes, weak foot only",pts:5} ],
-  [ {id:"b1",label:"5 minutes first touch off the wall",pts:5},
-    {id:"b2",label:"Watch one clip, copy one move",pts:5} ],
-  [ {id:"b1",label:"Arrive early, 20 touches before warm-up",pts:5} ],
-  [ {id:"b1",label:"30 minutes at the park with a mate",pts:10},
-    {id:"b2",label:"20 shots — 10 each foot",pts:5} ],
-  [ {id:"b1",label:"Beat your juggling record — write the number down",pts:10},
-    {id:"b2",label:"Pick the one move you'll work on this week",pts:5} ]
+const WATER_GLASSES = 6;            // 1 point each, no approval needed
+
+// Each tier costs the same; he picks one option from it.
+const REWARDS = [
+  {cost:20,  options:["A drink of your choice",
+                      "30 minutes extra on the tablet, phone or TV",
+                      "A small treat — ice cream or chocolate"]},
+  {cost:40,  options:["Takeaway dinner, your pick",
+                      "An hour extra on the tablet, phone or TV",
+                      "Cards or a magazine"]},
+  {cost:60,  options:["Movie night at home, you choose, with snacks",
+                      "A mate over after school",
+                      "Something small for football — socks, grips, a drink bottle"]},
+  {cost:100, options:["Movies out",
+                      "Trampoline park or indoor soccer",
+                      "$20 to spend on whatever you want"]},
+  {cost:150, options:["Mates over, pizza night",
+                      "A day out, your choice",
+                      "A new ball"]},
+  {cost:300, options:["New boots",
+                      "A jersey",
+                      "A big day out"]},
 ];
 
-const HOME = [
-  {id:"h1",label:"Make your bed",pts:5},
-  {id:"h2",label:"Homework or 20 minutes reading",pts:5},
-  {id:"h3",label:"Football bag packed for tomorrow",pts:5},
-  {id:"h4",label:"Kit in the wash, boots cleaned",pts:5},
-  {id:"h5",label:"Help clear the table",pts:5}
+const PENALTIES = [
+  {cost:10, name:"Phone or tablet without asking"},
+  {cost:10, name:"Games before your jobs are done"},
+  {cost:15, name:"Screens after lights out"},
+  {cost:5,  name:"TV without asking"},
+  {cost:5,  name:"Didn't listen — asked three times"},
+  {cost:5,  name:"Backchat"},
+  {cost:8,  name:"Rough with your brother"},
+  {cost:5,  name:"Argued about going to training"},
+  {cost:3,  name:"Left your stuff everywhere"},
+  {cost:3,  name:"Skipped teeth or dragged out bedtime"},
 ];
 
-const RECOVER = [
-  {id:"r1",label:"5 minutes stretching",pts:5},
-  {id:"r2",label:"Veggies at dinner",pts:5},
-  {id:"r3",label:"In bed by 8:30, no screen",pts:10}
-];
-
-const WATER_GLASSES = 6;   // 2 pts each
-const WATER_PTS = 2;
-const GOAL = 0.8;          // weekly goal = 80% of everything on offer
-
-// Notifications — change the topic to something only you know, then
-// subscribe to that exact topic in the ntfy app on your phone.
+const DAILY_TARGET = 20;
+const FITNESS_ID = "f4";      // sprints/fitness
+const FITNESS_CAP = 3;        // max times per week it pays
+const GOOD_DAYS_FOR_BONUS = 5;
+const WEEK_BONUS = 20;
 const NTFY_TOPIC = "vn-236bb9c0212ccc5c8c4b";
 const NOTIFY = true;
 /* --------------------------------------------------------------- */
 
 const $ = s => document.querySelector(s);
-const dayNames = ["M","T","W","T","F","S","S"];
-let store = {};
+const KEY = "vedran-daily-v2";
+let store = {days:{}, spent:[], claim:null, penalties:[], armed:true, queue:[]};
+let parent = false;
 
-function mondayOf(d){
-  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
-  return x;
-}
-const today = new Date();
-const monday = mondayOf(today);
-const KEY = "vedran-week-" + monday.toISOString().slice(0,10);
-let sel = (today.getDay() + 6) % 7;
+const dkey = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const todayKey = () => dkey(new Date());
+const ALL = GROUPS.flatMap(g => g.tasks);
+const byId = id => ALL.find(t => t.id === id);
 
 function load(){
-  try { store = JSON.parse(localStorage.getItem(KEY)) || {}; }
-  catch(e){ store = {}; }
+  try{ const raw = JSON.parse(localStorage.getItem(KEY)); if(raw) store = Object.assign(store, raw); }catch(e){}
+  store.days = store.days || {}; store.spent = store.spent || [];
+  store.penalties = store.penalties || []; store.queue = store.queue || [];
 }
-function save(){
-  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+function day(k){ return store.days[k] || (store.days[k] = {state:{}, water:0}); }
+
+function ptsOf(k){
+  const d = day(k);
+  const got = Object.keys(d.state).reduce((s,id)=> s + (d.state[id]==="ok" && byId(id) ? byId(id).pts : 0), 0);
+  const lost = store.penalties.filter(x=>x.on===k).reduce((s,x)=>s+x.cost,0);
+  return got + d.water - lost;
 }
-function dayState(i){ return store[i] || (store[i] = {done:{}, water:0}); }
-
-function tasksFor(i){ return [...BALL[i], ...HOME, ...RECOVER]; }
-function dayMax(i){ return tasksFor(i).reduce((s,t)=>s+t.pts,0) + WATER_GLASSES*WATER_PTS; }
-function dayPts(i){
-  const st = dayState(i);
-  return tasksFor(i).reduce((s,t)=> s + (st.done[t.id] ? t.pts : 0), 0) + st.water*WATER_PTS;
+function pendingToday(){
+  const d = day(todayKey());
+  return Object.keys(d.state).filter(id => d.state[id]==="wait");
 }
-function weekMax(){ let s=0; for(let i=0;i<7;i++) s+=dayMax(i); return s; }
-function weekPts(){ let s=0; for(let i=0;i<7;i++) s+=dayPts(i); return s; }
+function earned(){ return Object.keys(store.days).reduce((s,k)=> s+ptsOf(k), 0); }
 
-function fmt(d){ return d.toLocaleDateString("en-AU",{day:"numeric",month:"short"}); }
-
-function toggle(i,id){
-  const st = dayState(i);
-  st.done[id] = !st.done[id];
-  save(); checkNotify(i); render();
+function mondayKey(k){
+  const [y,m,dd] = k.split("-").map(Number);
+  const d = new Date(y, m-1, dd);
+  d.setDate(d.getDate() - ((d.getDay()+6)%7));
+  return dkey(d);
 }
-function setWater(i,n){
-  const st = dayState(i);
-  st.water = (st.water === n) ? n-1 : n;
-  save(); checkNotify(i); render();
+function goodDaysIn(wk){
+  return Object.keys(store.days).filter(k => mondayKey(k)===wk && ptsOf(k) >= DAILY_TARGET).length;
+}
+function bonusTotal(){
+  const weeks = [...new Set(Object.keys(store.days).map(mondayKey))];
+  return weeks.reduce((s,w)=> s + (goodDaysIn(w) >= GOOD_DAYS_FOR_BONUS ? WEEK_BONUS : 0), 0);
+}
+function fitnessThisWeek(){
+  const wk = mondayKey(todayKey());
+  return Object.keys(store.days).filter(k =>
+    mondayKey(k)===wk && store.days[k].state && store.days[k].state[FITNESS_ID]).length;
+}
+function fitnessLocked(){
+  const st = day(todayKey()).state[FITNESS_ID];
+  return !st && fitnessThisWeek() >= FITNESS_CAP;
 }
 
-/* --- notifications ------------------------------------------------ */
-const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+function bank(){ return earned() + bonusTotal() - store.spent.reduce((s,r)=>s+r.cost,0); }
 
-function queueNote(title, message, tags){
+/* --- notify -------------------------------------------------------- */
+function note(title, message, tags){
   if(!NOTIFY) return;
-  store.queue = store.queue || [];
   store.queue.push({topic:NTFY_TOPIC, title, message, tags});
-  save(); flushQueue();
+  save(); flush();
 }
-
-function flushQueue(){
-  if(!NOTIFY || !store.queue || !store.queue.length) return;
-  const note = store.queue[0];
-  fetch("https://ntfy.sh/", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(note)
-  }).then(r => {
-    if(!r.ok) throw new Error(r.status);
-    store.queue.shift();
-    save();
-    if(store.queue.length) flushQueue();   // keep draining
-  }).catch(() => { /* stays queued, retried on next tap */ });
+function flush(){
+  if(!NOTIFY || !store.queue.length) return;
+  fetch("https://ntfy.sh/",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(store.queue[0])})
+    .then(r=>{ if(!r.ok) throw 0; store.queue.shift(); save(); if(store.queue.length) flush(); })
+    .catch(()=>{});
 }
-
-function checkNotify(i){
-  store.sent = store.sent || {};
-  if(dayPts(i) >= dayMax(i)*GOAL && !store.sent["d"+i]){
-    store.sent["d"+i] = true;
-    queueNote("Day done", "Vedran finished " + DAY_FULL[i] + " — " + dayPts(i) + " points.", ["soccer"]);
+function armNotify(){
+  const n = pendingToday().length;
+  if(n && store.armed){
+    store.armed = false;
+    note("Waiting on you", "Vedran has " + n + " thing" + (n>1?"s":"") + " to check off.", ["soccer"]);
   }
-  const target = Math.round(weekMax()*GOAL);
-  if(weekPts() >= target && !store.sent.week){
-    store.sent.week = true;
-    queueNote("Weekly goal hit", "Vedran hit " + weekPts() + " of " + target + " points. Full time.", ["trophy"]);
-  }
+  if(!n) store.armed = true;
   save();
 }
 
-function taskRow(i,t){
-  const on = !!dayState(i).done[t.id];
-  return `<button class="task" aria-pressed="${on}" data-id="${t.id}">
-    <span class="tick"><svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg></span>
-    <span class="label">${t.label}</span>
-    <span class="pts">${t.pts}</span>
-  </button>`;
+/* --- actions ------------------------------------------------------- */
+function tapTask(id){
+  const d = day(todayKey()), st = d.state[id];
+  if(id === FITNESS_ID && !parent && fitnessLocked()) return;
+  if(parent){ if(st==="ok") delete d.state[id]; else d.state[id] = "ok"; }
+  else if(st==="ok") return;                    // only a parent can undo an approval
+  else if(st==="wait") delete d.state[id];
+  else d.state[id] = "wait";
+  save(); armNotify(); render();
 }
-
-function group(title, i, list){
-  const got = list.reduce((s,t)=> s + (dayState(i).done[t.id] ? t.pts : 0), 0);
-  const max = list.reduce((s,t)=>s+t.pts,0);
-  return `<h2>${title}<em>${got}/${max}</em></h2>` + list.map(t=>taskRow(i,t)).join("");
+function newRecord(){
+  const n = parseInt(prompt("How many keepy-uppies?"), 10);
+  if(!n || n < 1) return;
+  const best = (store.record && store.record.best) || 0;
+  if(n <= best){ alert("Best is still " + best + ". Go again."); return; }
+  store.record = {best:n, on:todayKey()};
+  save();
+  note("New juggling record", "Vedran just hit " + n + " keepy-uppies. Old record was " + best + ".", ["soccer"]);
+  render();
 }
+function judge(id, ok){
+  const d = day(todayKey());
+  if(ok) d.state[id] = "ok"; else delete d.state[id];
+  save(); armNotify(); render();
+}
+function approveAll(){
+  const d = day(todayKey());
+  pendingToday().forEach(id => d.state[id] = "ok");
+  save(); armNotify(); render();
+}
+function setWater(n){
+  const d = day(todayKey());
+  d.water = (d.water===n) ? n-1 : n;
+  save(); render();
+}
+function askReward(cost, name){
+  store.claim = {cost:cost, name:name}; save();
+  note("Reward request", "Vedran wants: " + name + " (" + cost + " points). He has " + bank() + ".", ["tada"]);
+  render();
+}
+function settleClaim(ok){
+  const c = store.claim;
+  if(ok && c && bank() >= c.cost) store.spent.push({cost:c.cost, name:c.name, on:todayKey()});
+  store.claim = null; save(); render();
+}
+function penalise(p){
+  if(!confirm("Take " + p.cost + " points off for: " + p.name + "?")) return;
+  store.penalties.push({cost:p.cost, name:p.name, on:todayKey()});
+  save(); render();
+}
+function penaliseCustom(){
+  const why = prompt("What for?");
+  if(!why) return;
+  const n = parseInt(prompt("How many points?"), 10);
+  if(!n || n < 1) return;
+  store.penalties.push({cost:n, name:why, on:todayKey()});
+  save(); render();
+}
+function undoPenalty(i){ store.penalties.splice(i,1); save(); render(); }
 
+/* --- render -------------------------------------------------------- */
 function render(){
-  const pts = weekPts(), max = weekMax(), target = Math.round(max*GOAL);
-  const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
+  const k = todayKey(), d = day(k), pts = ptsOf(k), b = bank(), waits = pendingToday();
 
+  $("#parentbar").hidden = !parent;
+  $("#reset").hidden = !parent;
+  $("#parentBtn").hidden = parent;
   $("#who").textContent = PLAYER;
-  $("#dates").textContent = fmt(monday) + " – " + fmt(sunday);
-  $("#pts").textContent = pts;
-  $("#target").textContent = "/ " + target + " points";
-  $("#weekly").textContent = pts >= target ? "Goal reached" : (target-pts) + " points to go";
+  $("#date").textContent = new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"short"});
+  $("#today").textContent = pts;
+  $("#bank").textContent = b;
+  $("#bankMini").textContent = b + " saved";
+  $("#waiting").textContent = waits.length ? waits.length + " waiting for Dad to check" : "";
 
-  const blocks = 10, lit = Math.min(blocks, Math.floor(pts/target*blocks));
-  $("#bar").innerHTML = Array.from({length:blocks},(_,n)=>
-    `<i class="${n<lit ? (pts>=target?"full":"on") : ""}"></i>`).join("");
-  $("#fulltime").hidden = pts < target;
+  const wk = mondayKey(k), good = goodDaysIn(wk);
+  $("#bonus").innerHTML = good >= GOOD_DAYS_FOR_BONUS
+    ? `Weekly bonus <b>+${WEEK_BONUS}</b> — ${good} good days`
+    : `${good}/${GOOD_DAYS_FOR_BONUS} good days this week — ${WEEK_BONUS} point bonus at ${GOOD_DAYS_FOR_BONUS}`;
 
-  $("#days").innerHTML = PLAN.map((p,i)=>{
-    const complete = dayPts(i) >= dayMax(i)*GOAL;
-    const cls = complete ? "done" : (p.train ? "train" : "");
-    return `<button class="day" aria-pressed="${i===sel}" data-day="${i}">
-      ${dayNames[i]}<span class="dot ${cls}"></span></button>`;
+  $("#recordBest").textContent = (store.record && store.record.best) || 0;
+  $("#recordWhen").textContent = store.record ? "set " + store.record.on : "";
+
+  const next = REWARDS.find(r => r.cost > b) || REWARDS[REWARDS.length-1];
+  const prev = [...REWARDS].reverse().find(r => r.cost <= b);
+  const floor = prev && prev.cost < next.cost ? prev.cost : 0;
+  const frac = next.cost > floor ? (b-floor)/(next.cost-floor) : 1;
+  $("#nextName").textContent = b >= next.cost ? "Everything unlocked" : "Next: the " + next.cost + " point rewards";
+  $("#nextGap").textContent = b >= next.cost ? "" : (next.cost-b) + " to go";
+  const blocks = 12, lit = Math.max(0, Math.min(blocks, Math.round(frac*blocks)));
+  $("#bar").innerHTML = Array.from({length:blocks},(_,n)=>`<i class="${n<lit?"on":""}"></i>`).join("");
+
+  $("#lists").innerHTML = GROUPS.map(g => {
+    const got = g.tasks.reduce((s,t)=> s + (d.state[t.id]==="ok" ? t.pts : 0), 0);
+    const max = g.tasks.reduce((s,t)=> s+t.pts, 0);
+    const rows = g.tasks.map(t => {
+      const st = d.state[t.id];
+      const capped = t.id===FITNESS_ID && !st && fitnessThisWeek() >= FITNESS_CAP;
+      const cls = (st==="ok" ? "done" : st==="wait" ? "pending" : "") + (capped ? " capped" : "");
+      const sub = st==="wait" ? "<small>waiting for Dad</small>"
+                : capped ? "<small>" + FITNESS_CAP + " this week already — rest those legs</small>" : "";
+      const row = `<button class="task ${cls}" data-id="${t.id}">
+          <span class="tick"><svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg></span>
+          <span class="label">${t.label}${sub}</span><span class="pts">${t.pts}</span></button>`;
+      const verdict = (parent && st==="wait")
+        ? `<div class="judge"><button class="ok" data-yes="${t.id}">Yes, done</button>
+           <button class="no" data-no="${t.id}">Not done</button></div>` : "";
+      return row + verdict;
+    }).join("");
+    const water = g.title==="Night"
+      ? `<div class="water"><span class="label">Water — ${WATER_GLASSES} glasses</span><span class="glasses">` +
+        Array.from({length:WATER_GLASSES},(_,n)=>
+          `<button class="glass ${n<d.water?"on":""}" data-water="${n+1}" aria-label="Glass ${n+1}"></button>`).join("") +
+        `</span></div>` : "";
+    return `<h2>${g.title}<em>${got}/${max}</em></h2>${rows}${water}`;
   }).join("");
 
-  $("#plan").innerHTML = PLAN[sel].note;
+  $("#rewards").innerHTML = REWARDS.map(tier => {
+    const can = b >= tier.cost;
+    return tier.options.map((opt,i) => {
+      const asked = store.claim && store.claim.name === opt && store.claim.cost === tier.cost;
+      const btn = asked
+        ? (parent ? `<button class="get" data-settle="yes">Give it</button>` : `<span class="askedfor">asked Dad</span>`)
+        : (can ? `<button class="get" data-ask="${tier.cost}" data-opt="${i}">Ask</button>` : "");
+      return `<div class="reward ${can?"":"locked"}">
+        <span class="cost">${i===0 ? tier.cost : ""}</span>
+        <span class="name">${opt}</span>${btn}</div>`;
+    }).join("");
+  }).join("");
 
-  const st = dayState(sel);
-  $("#lists").innerHTML =
-    group("Ball work", sel, BALL[sel]) +
-    group("Home &amp; school", sel, HOME) +
-    group("Recovery", sel, RECOVER) +
-    `<div class="water"><span class="label">Water — ${WATER_GLASSES} glasses</span>
-      <span class="glasses">` +
-      Array.from({length:WATER_GLASSES},(_,n)=>
-        `<button class="glass ${n < st.water ? "on":""}" data-water="${n+1}"
-           aria-label="Glass ${n+1}"></button>`).join("") +
-    `</span></div>`;
+  const todayPen = store.penalties.map((p,i)=>({p,i})).filter(x=>x.p.on===k);
+  $("#parentZone").innerHTML = !parent
+    ? `<h2>What loses points</h2>`
+      + PENALTIES.map(p=>`<div class="penalty"><span class="cost">−${p.cost}</span>
+          <span class="name">${p.name}</span></div>`).join("")
+      + (todayPen.length
+        ? `<h2>Lost today</h2>` + todayPen.map(x=>`<div class="log">${x.p.name} <b>−${x.p.cost}</b></div>`).join("")
+        : "")
+    : (waits.length ? `<h2>Waiting<em>${waits.length}</em></h2>
+        <div class="judge"><button class="ok" data-approveall="1">Approve all ${waits.length}</button></div>` : "")
+      + `<h2>Take points off</h2>`
+      + PENALTIES.map((p,i)=>`<div class="penalty"><span class="cost">−${p.cost}</span>
+          <span class="name">${p.name}</span><button data-pen="${i}">Apply</button></div>`).join("")
+      + `<div class="penalty"><span class="cost">−?</span>
+          <span class="name">Something else</span><button data-custom="1">Apply</button></div>`
+      + (todayPen.length ? `<h2>Taken off today</h2>` + todayPen.map(x=>
+          `<div class="penalty"><span class="cost">−${x.p.cost}</span><span class="name">${x.p.name}</span>
+           <button data-undo="${x.i}">Undo</button></div>`).join("") : "")
+      + (store.claim ? `<h2>Reward asked for</h2><div class="penalty">
+          <span class="cost">−${store.claim.cost}</span>
+          <span class="name">${store.claim.name}</span>
+          <button data-settle="no">Not yet</button></div>` : "");
+
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const dt = new Date(); dt.setDate(dt.getDate()-i);
+    days.push({label:["S","M","T","W","T","F","S"][dt.getDay()],
+               pts: Math.max(0, store.days[dkey(dt)] ? ptsOf(dkey(dt)) : 0)});
+  }
+  const top = Math.max(DAILY_TARGET, ...days.map(x=>x.pts));
+  $("#history").innerHTML = days.map(x=>
+    `<div><span style="height:${Math.round(x.pts/top*38)}px"></span>${x.label}</div>`).join("");
+
+  $("#tip").textContent = pts >= DAILY_TARGET ? "Good day." : Math.max(0, DAILY_TARGET-pts) + " points to a good day";
 }
 
 document.addEventListener("click", e => {
-  const day = e.target.closest("[data-day]");
-  if(day){ sel = +day.dataset.day; render(); return; }
-  const task = e.target.closest(".task");
-  if(task){ toggle(sel, task.dataset.id); return; }
-  const glass = e.target.closest("[data-water]");
-  if(glass){ setWater(sel, +glass.dataset.water); return; }
+  const yes = e.target.closest("[data-yes]");        if(yes) return judge(yes.dataset.yes, true);
+  const no  = e.target.closest("[data-no]");         if(no)  return judge(no.dataset.no, false);
+  const all = e.target.closest("[data-approveall]"); if(all) return approveAll();
+  const pen = e.target.closest("[data-pen]");        if(pen) return penalise(PENALTIES[+pen.dataset.pen]);
+  const cus = e.target.closest("[data-custom]");     if(cus) return penaliseCustom();
+  const un  = e.target.closest("[data-undo]");       if(un)  return undoPenalty(+un.dataset.undo);
+  const ask = e.target.closest("[data-ask]");
+  if(ask){
+    const tier = REWARDS.find(t => t.cost === +ask.dataset.ask);
+    return askReward(tier.cost, tier.options[+ask.dataset.opt]);
+  }
+  const set = e.target.closest("[data-settle]");     if(set) return settleClaim(set.dataset.settle==="yes");
+  const g   = e.target.closest("[data-water]");      if(g)   return setWater(+g.dataset.water);
+  const t   = e.target.closest(".task");             if(t)   return tapTask(t.dataset.id);
 });
-
+$("#recordBtn").addEventListener("click", newRecord);
+$("#parentBtn").addEventListener("click", () => {
+  if(prompt("PIN") === PARENT_PIN){ parent = true; render(); }
+});
+$("#exitParent").addEventListener("click", () => { parent = false; render(); });
 $("#reset").addEventListener("click", () => {
-  store[sel] = {done:{}, water:0};
-  if(store.sent) delete store.sent["d"+sel];
-  save(); render();
+  store.days[todayKey()] = {state:{}, water:0};
+  store.penalties = store.penalties.filter(p => p.on !== todayKey());
+  store.armed = true; save(); render();
 });
 
-load();
-flushQueue();
-render();
+load(); flush(); render();
 </script>
 </body>
 </html>

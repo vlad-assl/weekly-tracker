@@ -140,8 +140,7 @@
 
   <section class="board">
     <div class="board-top"><div class="who" id="who"></div><div class="date" id="date"></div></div>
-    <div class="score"><b id="today">0</b><span>points today</span></div>
-    <div class="bank">Saved up: <b id="bank">0</b></div>
+    <div class="score"><b id="today">0</b><span>points</span></div>
     <div class="bonus" id="bonus"></div>
     <div class="waiting" id="waiting"></div>
     <div class="next">
@@ -278,7 +277,7 @@ const FITNESS_CAP = 3;        // max times per week it pays
 const GOOD_DAYS_FOR_BONUS = 5;
 const WEEK_BONUS = 20;
 const NTFY_TOPIC = "vn-236bb9c0212ccc5c8c4b";
-const NOTIFY = true;
+const NOTIFY = false;
 /* --------------------------------------------------------------- */
 
 const $ = s => document.querySelector(s);
@@ -490,9 +489,7 @@ function render(){
   $("#parentBtn").hidden = parent;
   $("#who").textContent = PLAYER;
   $("#date").textContent = new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"short"});
-  $("#today").textContent = pts;
-  $("#bank").textContent = b;
-  $("#bankMini").textContent = b + " saved";
+  $("#today").textContent = b;
   $("#waiting").textContent = waits.length ? waits.length + " waiting for Dad to check" : "";
 
   const wk = mondayKey(k), good = goodDaysIn(wk);

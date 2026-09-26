@@ -156,6 +156,7 @@
   <div class="record">
     <b id="recordBest">0</b><span>keepy-uppies</span>
     <button class="get" id="recordBtn">Beat it</button>
+      <button class="get" id="recordEdit" hidden>Edit</button>
   </div>
 
   <h2>Rewards<em id="bankMini"></em></h2>
@@ -392,6 +393,16 @@ function newRecord(){
     render();
   });
 }
+function editRecord(){
+  ask("Set the record — 0 to clear it", "number").then(v => {
+    if(v === null || v === "") return;
+    const n = parseInt(v, 10);
+    if(isNaN(n) || n < 0) return;
+    if(n === 0) delete store.record;
+    else store.record = {best:n, on:todayKey()};
+    save(); render();
+  });
+}
 function judge(id, ok){
   const d = day(todayKey());
   if(ok) d.state[id] = "ok"; else delete d.state[id];
@@ -475,6 +486,7 @@ function render(){
 
   $("#parentbar").hidden = !parent;
   $("#reset").hidden = !parent;
+  $("#recordEdit").hidden = !parent;
   $("#parentBtn").hidden = parent;
   $("#who").textContent = PLAYER;
   $("#date").textContent = new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"short"});
@@ -607,6 +619,7 @@ document.addEventListener("click", e => {
   const t   = e.target.closest(".task");             if(t)   return tapTask(t.dataset.id);
 });
 $("#recordBtn").addEventListener("click", newRecord);
+$("#recordEdit").addEventListener("click", editRecord);
 $("#parentBtn").addEventListener("click", () => {
   ask("PIN", "pin").then(v => {
     if(v === PARENT_PIN){ parent = true; render(); }

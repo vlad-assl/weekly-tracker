@@ -91,6 +91,9 @@
     font-size:14px;font-weight:700;padding:7px 12px;border-radius:4px;cursor:pointer}
   .log{padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px;color:var(--dim)}
   .log b{color:var(--red);font-variant-numeric:tabular-nums}
+  .log b.up{color:var(--lime)}
+  .bonuscost{color:var(--lime)!important}
+  .bonusbtn{border-color:var(--lime)!important;color:var(--lime)!important}
 
   .modal{position:fixed;inset:0;background:rgba(6,20,13,.82);display:grid;place-items:center;padding:22px;z-index:20}
   .sheet{width:100%;max-width:340px;background:var(--raised);border:1.5px solid var(--line);border-radius:8px;padding:20px}
@@ -279,7 +282,7 @@ const NOTIFY = true;
 
 const $ = s => document.querySelector(s);
 const KEY = "vedran-daily-v2";
-let store = {days:{}, spent:[], claim:null, penalties:[], armed:true, queue:[]};
+let store = {days:{}, spent:[], claim:null, penalties:[], bonuses:[], armed:true, queue:[]};
 let parent = false;
 
 const dkey = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -291,6 +294,7 @@ function load(){
   try{ const raw = JSON.parse(localStorage.getItem(KEY)); if(raw) store = Object.assign(store, raw); }catch(e){}
   store.days = store.days || {}; store.spent = store.spent || [];
   store.penalties = store.penalties || []; store.queue = store.queue || [];
+  store.bonuses = store.bonuses || [];
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 function day(k){ return store.days[k] || (store.days[k] = {state:{}, water:0, am:{}}); }
@@ -306,7 +310,8 @@ function ptsOf(k){
   const d = day(k);
   const got = Object.keys(d.state).reduce((s,id)=> s + (d.state[id]==="ok" ? valueOf(k,id) : 0), 0);
   const lost = store.penalties.filter(x=>x.on===k).reduce((s,x)=>s+x.cost,0);
-  return got + d.water - lost;
+  const extra = (store.bonuses||[]).filter(x=>x.on===k).reduce((s,x)=>s+x.cost,0);
+  return got + d.water + extra - lost;
 }
 function pendingToday(){
   const d = day(todayKey());
@@ -439,6 +444,18 @@ function penalise(p){
     save(); render();
   });
 }
+function awardCustom(){
+  ask("What did he do?", "text").then(why => {
+    if(!why) return;
+    ask("How many points?", "number").then(v => {
+      const n = parseInt(v, 10);
+      if(!n || n < 1) return;
+      store.bonuses.push({cost:n, name:why, on:todayKey()});
+      save(); render();
+    });
+  });
+}
+function undoBonus(i){ store.bonuses.splice(i,1); save(); render(); }
 function penaliseCustom(){
   ask("What for?", "text").then(why => {
     if(!why) return;
@@ -525,15 +542,26 @@ function render(){
   }).join("");
 
   const todayPen = store.penalties.map((p,i)=>({p,i})).filter(x=>x.p.on===k);
+  const todayBon = (store.bonuses||[]).map((p,i)=>({p,i})).filter(x=>x.p.on===k);
   $("#parentZone").innerHTML = !parent
     ? `<h2>What loses points</h2>`
       + PENALTIES.map(p=>`<div class="penalty"><span class="cost">−${p.cost}</span>
           <span class="name">${p.name}</span></div>`).join("")
+      + (todayBon.length
+        ? `<h2>Extra today</h2>` + todayBon.map(x=>`<div class="log">${x.p.name} <b class="up">+${x.p.cost}</b></div>`).join("")
+        : "")
       + (todayPen.length
         ? `<h2>Lost today</h2>` + todayPen.map(x=>`<div class="log">${x.p.name} <b>−${x.p.cost}</b></div>`).join("")
         : "")
     : (waits.length ? `<h2>Waiting<em>${waits.length}</em></h2>
         <div class="judge"><button class="ok" data-approveall="1">Approve all ${waits.length}</button></div>` : "")
+      + `<h2>Give extra points</h2>
+         <div class="penalty"><span class="cost bonuscost">+?</span>
+           <span class="name">Something good that isn't on the list</span>
+           <button class="bonusbtn" data-award="1">Give</button></div>`
+      + (todayBon.length ? todayBon.map(x=>
+          `<div class="penalty"><span class="cost bonuscost">+${x.p.cost}</span><span class="name">${x.p.name}</span>
+           <button class="bonusbtn" data-unbonus="${x.i}">Undo</button></div>`).join("") : "")
       + `<h2>Take points off</h2>`
       + PENALTIES.map((p,i)=>`<div class="penalty"><span class="cost">−${p.cost}</span>
           <span class="name">${p.name}</span><button data-pen="${i}">Apply</button></div>`).join("")
@@ -566,6 +594,8 @@ document.addEventListener("click", e => {
   const all = e.target.closest("[data-approveall]"); if(all) return approveAll();
   const pen = e.target.closest("[data-pen]");        if(pen) return penalise(PENALTIES[+pen.dataset.pen]);
   const cus = e.target.closest("[data-custom]");     if(cus) return penaliseCustom();
+  const aw  = e.target.closest("[data-award]");      if(aw)  return awardCustom();
+  const ub  = e.target.closest("[data-unbonus]");    if(ub)  return undoBonus(+ub.dataset.unbonus);
   const un  = e.target.closest("[data-undo]");       if(un)  return undoPenalty(+un.dataset.undo);
   const ask = e.target.closest("[data-ask]");
   if(ask){

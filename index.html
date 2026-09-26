@@ -617,6 +617,7 @@ $("#exitParent").addEventListener("click", () => { parent = false; render(); });
 $("#reset").addEventListener("click", () => {
   store.days[todayKey()] = {state:{}, water:0, am:{}};
   store.penalties = store.penalties.filter(p => p.on !== todayKey());
+  store.bonuses = store.bonuses.filter(b => b.on !== todayKey());
   store.armed = true; save(); render();
 });
 
